@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import './search.dart';
+import './intro.dart';
 
 class Classify extends StatefulWidget {
   @override
@@ -16,12 +18,25 @@ class _ClassifyState extends State<Classify> {
             icon: Icon(Icons.search), 
             color: Colors.white,
             onPressed: () {
-              print('跳转搜索页面');
+              Navigator.push(context, MaterialPageRoute(
+                builder: (context) {
+                  return Search();
+                },
+              ));
             },
           ),
         ],
       ),
-      body: Center(child: Text('书屋页面'),)
+      body: Center(
+        child: FlatButton(
+          child:  Text('单兵为王'),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (context) => Intro(novelId: 1),
+            ));
+          },
+        ),
+      )
     );
   }
 }

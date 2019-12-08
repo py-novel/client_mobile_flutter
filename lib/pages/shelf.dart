@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './read.dart';
 
 class Shelf extends StatefulWidget {
   @override
@@ -16,7 +17,11 @@ class _ShelfState extends State<Shelf> {
         child: FlatButton(
           child: Text('阅读'),
           onPressed: () {
-            print('跳转到阅读页面');
+            Navigator.push(context, MaterialPageRoute(
+              builder: (context) {
+                return Read(shelfId: 2);
+              },
+            ));
           },
         ),
       ),
