@@ -26,7 +26,8 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   TabController controller;
 
   @override
@@ -45,9 +46,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       body: TabBarView(
-        controller: controller,
-        children: [Shelf(), Classify()]
-      ),
+          controller: controller, children: [ShelfPage(), ClassifyPage()]),
       bottomNavigationBar: Material(
         color: Colors.grey,
         child: TabBar(controller: controller, tabs: [
