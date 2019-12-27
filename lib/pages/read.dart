@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 
-class Read2 extends StatelessWidget {
-  @override 
-  Widget build (BuildContext context) {
-    return Read();
-  }
-} 
-
-class Read extends StatefulWidget {
-  final shelfId;
-  Read({ this.shelfId });
+class ReadPage extends StatefulWidget {
+  final int shelfId;
+  ReadPage({ this.shelfId });
 
   @override
-  State createState() => _ReadState();
+  State createState() => _ReadPageState();
 }
 
-class _ReadState extends State<Read> {
+class _ReadPageState extends State<ReadPage> {
   @override 
   void initState () {
     super.initState();

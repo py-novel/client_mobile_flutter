@@ -1,13 +1,14 @@
-import 'package:dio/dio.dart' as prefix0;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'package:dio/dio.dart';
-import 'dart:async';
 import 'dart:math';
-import 'dart:convert';
-import '../models/Shelf.dart';
 import './read.dart';
+import '../models/Shelf.dart';
+import '../models/Oauth.dart';
+import '../utils/color.dart';
+import '../utils/request.dart';
+import '../components/BottomAppBar.dart';
+import '../components/NovelItem.dart';
+import '../components/LoadingView.dart';
 
 class ShelfPage extends StatefulWidget {
   @override
@@ -15,194 +16,173 @@ class ShelfPage extends StatefulWidget {
 }
 
 class _ShelfPageState extends State<ShelfPage> {
-  var _shelfList;
-
-  // 是否删除
-  bool _isDelete = false;
+  List<Shelf> _shelfList = []; // 书架列表
+  bool _whetherDelete = false; // 是否删除
+  bool _whetherLoading = true; //
 
   @override
   void initState() {
-    // _fetchShelfList();
-    _initData();
+    _fetchToken();
     super.initState();
-
-    // initData();
-    // Future.delayed(Duration(milliseconds: 100)).then((_) {
-    //   fetchShelfList();
-    // });
   }
 
-  _initData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int userId = prefs.getInt('userId') ?? -1;
-    if (userId == -1) {
-      String username = Random().nextDouble().toString().substring(2);
-      try {
-        Response response = await Dio().post(
-            'https://novel.dkvirus.top/api/v3/gysw/oauth/h5signin',
-            data: {'username': username});
-        prefs.setInt('userId', response.data['data']['userId']);
-        prefs.setString('token', response.data['data']['token']);
-        print('###################');
-        print(response.data['data']);
-      } catch (e) {
-        print(e);
+  @override
+  Widget build(BuildContext context) {
+    Widget content;
+
+    if (_whetherLoading) {
+      content = Center(child: LoadingView());
+    } else {
+      if (_shelfList.length > 0) {
+        content = _buildShelfList();
+      } else {
+        content = _buildEmpty();
       }
     }
-    _fetchShelfList();
+
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: Container(
+        color: MyColor.bgColor,
+        child: content,
+      ),
+      bottomNavigationBar: MyBottomAppBar(
+        currentIndex: 0,
+      ),
+    );
   }
 
-  /*
-   * 获取书架列表数据 
-   */
+  Widget _buildAppBar() {
+    List<Widget> actions = [];
+    if (_shelfList.length > 0) {
+      actions.add(FlatButton(
+        child: Text(_whetherDelete ? '完成' : '编辑'),
+        onPressed: () {
+          setState(() {
+            _whetherDelete = !_whetherDelete;
+          });
+        },
+      ));
+    }
+
+    return AppBar(
+      title: Text(
+        '书架',
+        style: TextStyle(color: MyColor.appBarTitle),
+      ),
+      backgroundColor: MyColor.bgColor,
+      elevation: 0,
+      actions: actions,
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Image(
+            width: 150.0,
+            height: 150.0,
+            image: AssetImage("lib/images/empty.png"),
+          ),
+          FlatButton(
+            child: Text(
+              '书架空空，去书屋逛逛吧~~',
+              style: TextStyle(color: MyColor.linkColor),
+            ),
+            padding: EdgeInsets.symmetric(vertical: 60.0),
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/classify', (Route<dynamic> route) => false);
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShelfList() {
+    return ListView(
+      children: <Widget>[
+        Card(
+          margin: EdgeInsets.all(10.0),
+          elevation: 0,
+          child: Container(
+              padding: EdgeInsets.all(20.0),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 20.0,
+                crossAxisSpacing: 20.0,
+                childAspectRatio: 0.75, // 宽 / 高 = 0.7
+                padding: EdgeInsets.all(5.0),
+                children: List.generate(_shelfList.length, (index) {
+                  Shelf novel = _shelfList[index];
+                  return GestureDetector(
+                    child: NovelItem(
+                        bookName: novel.bookName, authorName: novel.authorName),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReadPage(
+                            shelfId: novel.id,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
+              )),
+        ),
+      ],
+    );
+  }
+
   _fetchShelfList() async {
+    setState(() {
+      _whetherLoading = true;
+    });
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int userId = prefs.getInt('userId') ?? -1;
-    print('userId = $userId');
 
     try {
-      Response response = await Dio()
-          .get('https://novel.dkvirus.top/api/v3/gysw/shelf?userId=$userId');
-      ShelfModel shelfResult = ShelfModel.fromJson(response.data);
+      var result = await HttpUtils.getInstance().get('/gysw/shelf?userId=$userId');
+      ShelfModel shelfResult = ShelfModel.fromJson(result.data);
+
       setState(() {
         _shelfList = shelfResult.data;
       });
     } catch (e) {
       print(e);
     }
+
+    setState(() {
+      _whetherLoading = false;
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('书架'),
-      ),
-      body: ListView(
-        children: <Widget>[
-          _buildShelfList(context),
-        ],
-      ),
-    );
-  }
+  _fetchToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  /*
-   * 书架 ui
-   */
-  Widget _buildShelfList(BuildContext context) {
-    if (_shelfList == null || _shelfList.length == 0) {
-      return Padding(
-        padding: EdgeInsets.only(top: 30.0),
-        child: Center(
-          child: FlatButton(
-            child: RichText(
-              text: TextSpan(
-                text: '书架控控',
-                style: TextStyle(
-                  color: Colors.black,
-                ),
-                children: <TextSpan>[
-                  TextSpan(
-                    text: '点我添加第一本小说吧~',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(context).pushNamed('/search');
-            },
-          ),
-        ),
-      );
+    int userId = prefs.getInt('userId') ?? -1;
+    if (userId == -1) {
+      String username = Random().nextDouble().toString().substring(2);
+
+      try {
+        var result = await HttpUtils.getInstance().post('/gysw/oauth/h5signin',
+            data: {username: username});
+        OauthModel oauthResult = OauthModel.fromJson(result.data);
+
+        prefs.setInt('userId', oauthResult.data.userId);
+        prefs.setString('token', oauthResult.data.token);
+      } catch (e) {
+        print(e);
+      }
     }
-
-    return Card(
-      margin: EdgeInsets.all(10.0),
-      elevation: 10.0,
-      child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
-          child: GridView.count(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 10.0,
-            crossAxisSpacing: 10.0,
-            childAspectRatio: 0.7, // 宽 / 高 = 0.7
-            padding: EdgeInsets.all(5.0),
-            children: List.generate(_shelfList.length, (index) {
-              return _buildShelfItem(_shelfList, index);
-            }),
-          )),
-    );
-  }
-
-  /*
-   * 单个列表项
-   */
-  Widget _buildShelfItem(List<Shelf> data, int index) {
-    return Stack(
-      alignment: Alignment(1.1, -1.05),
-      children: <Widget>[
-        GestureDetector(
-          // onTap: () {
-          //   // 跳转到阅读页面
-          //   Navigator.of(context).push(new MaterialPageRoute(builder: (_) {
-          //     return ReadPage(
-          //       url: data[index]['recent_chapter_url'],
-          //       bookName: data[index]['book_name'],
-          //       id: data[index]['id'],
-          //     );
-          //   })).then((_) {
-          //     _handleGetShelf(context);
-          //   });
-          // },
-          child: Card(
-            elevation: 5.0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0)),
-            clipBehavior: Clip.antiAlias,
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("lib/images/cover.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Align(
-                    alignment: Alignment(-0.6, 0.0),
-                    child: Text(
-                      data[index].bookName,
-                      style: TextStyle(fontSize: 22.0, color: Colors.grey),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment(0.4, 0.0),
-                    child: Text(
-                      '(' + data[index].authorName + ')',
-                      style: TextStyle(fontSize: 16.0, color: Colors.grey),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        _isDelete
-            ? IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () {
-                  // _handleDelShelf(context, data[index]['id']);
-                },
-              )
-            : Text(''),
-      ],
-    );
+    _fetchShelfList();
   }
 }

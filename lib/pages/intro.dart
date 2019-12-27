@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import '../models/Intro.dart';
-import '../main.dart';
+import '../utils/color.dart';
+import '../utils/request.dart';
+import '../components/NovelItem.dart';
+import '../components/LoadingView.dart';
 
 class IntroPage extends StatefulWidget {
-  final url;
+  final String url;
   IntroPage({this.url});
 
   @override
@@ -15,22 +17,120 @@ class IntroPage extends StatefulWidget {
 
 class _IntroPageState extends State<IntroPage> {
   Intro _intro;
+  bool _whetherPostLoading = false;
 
   @override
   void initState() {
-    print('enter intro.dart....');
-    _handleGetIntro();
+    _fetchIntroInfo();
     super.initState();
   }
 
-  /*
-   * 获取小说详情信息 
-   */
-  _handleGetIntro () async {
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> content = [];
+
+    if (_intro == null) {
+      content.add(LoadingView());
+    } else {
+      content.add(_buildBookAndAuthor());
+      content.add(_buildTimeAndClassify());
+      content.add(_buildBookDesc());
+      content.add(_buildFooterBtn());
+    }
+
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: Container(
+        color: MyColor.bgColor,
+        child: ListView(children: content),
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return AppBar(
+      backgroundColor: MyColor.bgColor,
+      elevation: 0,
+      title: Text('详情页', style: TextStyle(color: MyColor.appBarTitle)),
+      leading: IconButton(
+        icon: Icon(Icons.chevron_left),
+        color: MyColor.iconColor,
+        iconSize: 32,
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  /* 第一行：小说名称和作者名称 */
+  Widget _buildBookAndAuthor() {
+    return Container(
+      width: 150.0,
+      height: 200.0,
+      margin: EdgeInsets.symmetric(vertical: 10.0),
+      padding: EdgeInsets.symmetric(horizontal: 130.0),
+      child:
+          NovelItem(authorName: _intro.authorName, bookName: _intro.bookName),
+    );
+  }
+
+  /* 第二行：更新时间和分类 */
+  Widget _buildTimeAndClassify() {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.all(20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text('更新时间：' + _intro.lastUpdateAt),
+          Text('分类：' + _intro.classifyName)
+        ],
+      ),
+    );
+  }
+
+  /* 第三行：小说简介 */
+  Widget _buildBookDesc() {
+    return Container(
+      color: Colors.white,
+      margin: EdgeInsets.symmetric(vertical: 10.0),
+      padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(bottom: 10.0),
+            child: Text('简介', style: TextStyle(fontSize: 18.0)),
+          ),
+          Text(_intro.bookDesc, softWrap: true),
+        ],
+      ),
+    );
+  }
+
+  /* 加入书架按钮 */
+  Widget _buildFooterBtn() {
+    return GestureDetector(
+      child: Container(
+        margin: EdgeInsets.only(top: 20.0),
+        child: Text('加入书架', style: TextStyle(color: Colors.white)),
+        height: 48.0,
+        alignment: Alignment.center,
+        color: Colors.blue,
+      ),
+      onTap: () {
+        if (_whetherPostLoading) return
+        _postShelf();
+      },
+    );
+  }
+
+  _fetchIntroInfo() async {
     try {
-      Response introResponse = await Dio().get(
-          'https://novel.dkvirus.top/api/v3/gysw/novel/detail?url=${widget.url}');
-      IntroModel introResult = IntroModel.fromJson(introResponse.data);
+      var result = await HttpUtils.getInstance()
+          .get('/gysw/novel/detail?url=${Uri.encodeComponent(widget.url)}');
+      IntroModel introResult = IntroModel.fromJson(result.data);
 
       setState(() {
         _intro = introResult.data;
@@ -40,21 +140,18 @@ class _IntroPageState extends State<IntroPage> {
     }
   }
 
-  /*
-   * 加入书架 
-   */
-  _handleJoinShelf (BuildContext context) async {
+  /* 加入书架 */
+  _postShelf() async {
+    setState(() {
+      _whetherPostLoading = true;
+    });
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    int userId = prefs.getInt('userId') ?? -1;   // 取
+    int userId = prefs.getInt('userId') ?? -1; // 取
     String token = prefs.getString('token');
 
-    print('userId = $userId');
-    print('token = $token');
-    print('_intro = ${_intro.toJson()}');
-
     try {
-      Response response = await new Dio().request(
-        'https://novel.dkvirus.top/api/v3/gysw/shelf', 
+      Response<Map> result = await HttpUtils.getInstance().post('/gysw/shelf',
         data: {
           'userId': userId,
           'authorName': _intro.authorName,
@@ -63,176 +160,28 @@ class _IntroPageState extends State<IntroPage> {
           'bookCoverUrl': 'https://novel.dkvirus.top/images/cover.png',
           'recentChapterUrl': _intro.recentChapterUrl,
         },
-        options: Options(
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-          }
-        ), 
+        options: Options(headers: {
+          'Authorization': 'Bearer ' + token,
+        })
       );
 
+      if (result.data['code'] != '0000') {
+        print(result.data['message']);
+        setState(() {
+          _whetherPostLoading = false;
+        });
+        return;
+      }
+
       // 跳转到首页
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
-      );
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/shelf', (Route<dynamic> route) => false);
     } catch (e) {
       print(e);
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_intro == null) {
-      return Scaffold(
-        body: Column(
-          children: <Widget>[
-            SizedBox(
-              height: kToolbarHeight,
-            ),
-            Center(
-              child: Text(
-                '查询中....',
-                style: TextStyle(
-                  fontSize: 22.0,
-                ),
-              ),
-            )
-          ],
-        ),  
-      ); 
-    }
-
-    return Scaffold(
-      body: Container(
-        padding: EdgeInsets.only(top: 40.0),
-        child: Column(
-          children: <Widget>[
-            Expanded(
-                flex: 9,
-                child: Column(
-                  children: <Widget>[
-                    _buildBookAndAuthor(context),
-                    Container(
-                      color: Color.fromRGBO(239, 239, 239, 1.0),
-                      margin: EdgeInsets.only(bottom: 10.0, top: 20.0),
-                      padding: EdgeInsets.symmetric(vertical: 10.0),
-                      child: _buildTimeAndClassify(context),
-                    ),
-                    Container(
-                      color: Color.fromRGBO(239, 239, 239, 1.0),
-                      margin: EdgeInsets.only(bottom: 10.0),
-                      padding: EdgeInsets.only(bottom: 10.0),
-                      child: _buildBookDesc(context),
-                    ),
-                  ],
-                )),
-            Expanded(
-              flex: 1,
-              child: _buildJoinShelf(context),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  /*
-   * 第一行：小说名称和作者名称 
-   */
-  Widget _buildBookAndAuthor (BuildContext context) {
-    return SizedBox(
-      width: 200.0,
-      height: 300.0,
-      child: Center(
-        child: Card(
-          elevation: 5.0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            decoration: new BoxDecoration(
-              image: new DecorationImage(
-                image: new AssetImage("lib/images/cover.png"),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: new Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                new Align(
-                  alignment: Alignment(-0.6, 0.0),
-                  child: new Text(
-                    _intro.bookName,
-                    style: TextStyle(fontSize: 18.0, color: Colors.grey),
-                  ),
-                ),
-                new Align(
-                  alignment: Alignment(0.4, 0.0),
-                  child: new Text(
-                    '(' + _intro.authorName + ')',
-                    style: TextStyle(fontSize: 14.0, color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /*
-   * 第二行：更新时间和分类 
-   */
-  Widget _buildTimeAndClassify (BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: <Widget>[
-        Text('更新时间：' + _intro.lastUpdateAt),
-        Text('分类：' + _intro.classifyName)
-      ],
-    );
-  }
-
-  /*
-   * 第三行：小说简介 
-   */
-  Widget _buildBookDesc (BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.only(top: 20.0, bottom: 10.0),
-          child: Text(
-            '简介',
-            style: TextStyle(
-              fontSize: 18.0,
-              fontWeight: FontWeight.w400,
-            ),),
-        ),
-        Container(
-          padding: EdgeInsets.only(left: 15.0, right: 15.0),
-          child: Text(
-            _intro.bookDesc,
-            softWrap: true,
-            maxLines: 6,
-            overflow: TextOverflow.ellipsis,
-          ),
-        )
-      ],
-    );
-  }
-
-  /*
-   * 加入书架按钮
-   */
-  Widget _buildJoinShelf (BuildContext context) {
-    return Center(
-      child: RaisedButton(
-        onPressed: () {
-          _handleJoinShelf(context);
-        },
-        child: Text('加入书架'),
-      ),
-    );
+    setState(() {
+      _whetherPostLoading = false;
+    });
   }
 }

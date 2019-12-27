@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import './search.dart';
 import './intro.dart';
 import '../models/Classify.dart';
 import '../models/Novel.dart';
+import '../components/BottomAppBar.dart';
+import '../components/NovelItem.dart';
+import '../components/LoadingView.dart';
+import '../utils/color.dart';
+import '../utils/request.dart';
 
 class ClassifyPage extends StatefulWidget {
   @override
@@ -11,9 +14,10 @@ class ClassifyPage extends StatefulWidget {
 }
 
 class _ClassifyPageState extends State<ClassifyPage> {
-  List<Classify> _classifyList = [];
-  List<Novel> _novelList = [];
-  int _selectedClassifyId = 1;
+  List<Classify> _classifyList = []; // 分类列表
+  List<Novel> _novelList = []; // 小说列表
+  int _selectedClassifyId = 1; // 选中分类ID
+  bool _whetherNovelLoading = true;
 
   @override
   void initState() {
@@ -21,24 +25,123 @@ class _ClassifyPageState extends State<ClassifyPage> {
     super.initState();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: Container(
+        color: MyColor.bgColor,
+        child: Row(children: [
+          _buildClassifyList(),
+          _buildNovelList(),
+        ]),
+      ),
+      bottomNavigationBar: MyBottomAppBar(
+        currentIndex: 1,
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return AppBar(
+      title: Text(
+        '书屋',
+        style: TextStyle(color: MyColor.appBarTitle),
+      ),
+      backgroundColor: MyColor.bgColor,
+      elevation: 0,
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.search),
+          color: MyColor.iconColor,
+          onPressed: () {
+            Navigator.pushNamed(context, '/search');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClassifyList() {
+    return Expanded(
+      flex: 1,
+      child: ListView(
+        children: List.generate(_classifyList.length, (index) {
+          return _buildClassifyItem(item: _classifyList[index], index: index);
+        }),
+      ),
+    );
+  }
+
+  Widget _buildClassifyItem({item, index}) {
+    bool _isCurrent = _selectedClassifyId == item.id;
+    return Container(
+      child: FlatButton(
+        onPressed: () {
+          setState(() {
+            _selectedClassifyId = item.id;
+          });
+          _fetchNovelList(item.id);
+        },
+        child: Text(
+          _classifyList[index].desc,
+          style: _isCurrent
+              ? TextStyle(
+                  color: Color.fromRGBO(44, 131, 245, 1.0),
+                )
+              : TextStyle(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNovelList() {
+    Widget content = Container(
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+      child: GridView.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 20.0, // 垂直间距
+        crossAxisSpacing: 20.0, // 水平间距
+        childAspectRatio: 0.75, // 宽 / 高 = 0.7
+        children: List.generate(_novelList.length, (index) {
+          Novel novel = _novelList[index];
+          return GestureDetector(
+            child: NovelItem(
+              bookName: novel.bookName,
+              authorName: novel.authorName,
+            ),
+            onTap: () {
+              String bookUrl = novel.bookUrl;
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) {
+                return IntroPage(url: bookUrl);
+              }));
+            },
+          );
+        }),
+      ),
+    );
+
+    if (_whetherNovelLoading) {
+      content = Center(child: LoadingView());
+    }
+
+    return Expanded(
+      flex: 3,
+      child: content,
+    );
+  }
+
   _fetchClassifyList() async {
     try {
-      Response classifyResponse = await Dio()
-          .get('https://novel.dkvirus.top/api/v3/gysw/novel/classify');
-      ClassifyModel classifyResult =
-          ClassifyModel.fromJson(classifyResponse.data);
+      var result = await HttpUtils.getInstance().get('/gysw/novel/classify');
+      ClassifyModel classifyResult = ClassifyModel.fromJson(result.data);
 
       int selectedClassifyId = classifyResult.data[0].id;
-      Response novelResponse = await Dio().get(
-          'https://novel.dkvirus.top/api/v3/gysw/novels?classifyId=$selectedClassifyId');
-      NovelModel novelResult = NovelModel.fromJson(novelResponse.data);
-
-      print('===========');
-      print(novelResult.data.length);
+      _fetchNovelList(selectedClassifyId);
 
       setState(() {
         _classifyList = classifyResult.data;
-        _novelList = novelResult.data;
         _selectedClassifyId = selectedClassifyId;
       });
     } catch (e) {
@@ -46,160 +149,25 @@ class _ClassifyPageState extends State<ClassifyPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('书屋'),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.search),
-            color: Colors.white,
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (context) {
-                  return SearchPage();
-                },
-              ));
-            },
-          ),
-        ],
-      ),
-      body: Row(children: [
-        _buildClassifyList(context),
-        _buildNovelList(context),
-      ]),
-    );
-  }
-
-  /*
-   * 生成左侧小说分类列表
-   */
-  Widget _buildClassifyList(BuildContext context) {
-    var selectedClassifyStyle = TextStyle(
-      color: Color.fromRGBO(44, 131, 245, 1.0),
-    );
-
-    return Expanded(
-      flex: 1,
-      child: Container(
-        color: Color.fromRGBO(239, 239, 239, 1.0),
-        child: ListView(
-            children: List.generate(_classifyList.length, (index) {
-          return Container(
-              decoration: BoxDecoration(
-                  border: Border(
-                      bottom: BorderSide(
-                width: 1.0,
-                color: Colors.white,
-              ))),
-              child: Center(
-                child: FlatButton(
-                  onPressed: () {
-                    _handleGetNovel(context, _classifyList[index].id);
-                  },
-                  child: Text(
-                    _classifyList[index].desc,
-                    style: _selectedClassifyId == _classifyList[index].id
-                        ? selectedClassifyStyle
-                        : TextStyle(),
-                  ),
-                ),
-              ));
-        })),
-      ),
-    );
-  }
-
-  /*
-   * 生成右侧小说列表 
-   */
-  Widget _buildNovelList(BuildContext context) {
-    return Expanded(
-      flex: 3,
-      child: Container(
-        margin: EdgeInsets.only(top: 20.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 10.0,
-          crossAxisSpacing: 10.0,
-          childAspectRatio: 0.7, // 宽 / 高 = 0.7
-          padding: EdgeInsets.all(5.0),
-          children: List.generate(_novelList.length, (index) {
-            return _buildNovelItem(_novelList, index);
-          }),
-        ),
-      ),
-    );
-  }
-
-  /*
-   * 单个列表项
-   */
-  Widget _buildNovelItem(List<Novel> data, int index) {
-    return GestureDetector(
-      onTap: () {
-        String bookUrl = data[index].bookUrl;
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) {
-          return IntroPage(url: bookUrl);
-        }));
-      },
-      child: Card(
-        elevation: 5.0,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("lib/images/cover.png"),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              Align(
-                alignment: Alignment(-0.6, 0.0),
-                child: Text(
-                  data[index].bookName,
-                  style: TextStyle(fontSize: 18.0, color: Colors.grey),
-                ),
-              ),
-              Align(
-                alignment: Alignment(0.4, 0.0),
-                child: Text(
-                  '(' + data[index].authorName + ')',
-                  style: TextStyle(fontSize: 14.0, color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /*
-   * 根据分类 id 查询小说列表
-   */
-  _handleGetNovel(BuildContext context, classifyId) async {
-    print('classifyId = $classifyId');
-    if (classifyId == null) {
-      return;
-    }
+  _fetchNovelList(classifyId) async {
+    setState(() {
+      _whetherNovelLoading = true;
+    });
 
     try {
-      Response novelResponse = await Dio().get(
-          'https://novel.dkvirus.top/api/v3/gysw/novels?classifyId=$classifyId');
-      NovelModel novelResult = NovelModel.fromJson(novelResponse.data);
+      var result =
+          await HttpUtils.getInstance().get('/gysw/novels?classifyId=$classifyId');
+      NovelModel novelResult = NovelModel.fromJson(result.data);
 
       setState(() {
         _novelList = novelResult.data;
-        _selectedClassifyId = classifyId;
       });
     } catch (e) {
       print(e);
     }
+
+    setState(() {
+      _whetherNovelLoading = false;
+    });
   }
 }
