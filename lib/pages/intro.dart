@@ -1,11 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import '../models/Intro.dart';
 import '../utils/color.dart';
 import '../utils/request.dart';
+import '../utils/DialogUtils.dart';
 import '../components/NovelItem.dart';
 import '../components/LoadingView.dart';
+import '../components/ToastDialog.dart';
 
 class IntroPage extends StatefulWidget {
   final String url;
@@ -17,7 +20,6 @@ class IntroPage extends StatefulWidget {
 
 class _IntroPageState extends State<IntroPage> {
   Intro _intro;
-  bool _whetherPostLoading = false;
 
   @override
   void initState() {
@@ -66,10 +68,9 @@ class _IntroPageState extends State<IntroPage> {
   /* 第一行：小说名称和作者名称 */
   Widget _buildBookAndAuthor() {
     return Container(
-      width: 150.0,
-      height: 200.0,
+      height: 180.0,
+      alignment: Alignment.center,
       margin: EdgeInsets.symmetric(vertical: 10.0),
-      padding: EdgeInsets.symmetric(horizontal: 130.0),
       child:
           NovelItem(authorName: _intro.authorName, bookName: _intro.bookName),
     );
@@ -120,7 +121,6 @@ class _IntroPageState extends State<IntroPage> {
         color: Colors.blue,
       ),
       onTap: () {
-        if (_whetherPostLoading) return
         _postShelf();
       },
     );
@@ -142,10 +142,6 @@ class _IntroPageState extends State<IntroPage> {
 
   /* 加入书架 */
   _postShelf() async {
-    setState(() {
-      _whetherPostLoading = true;
-    });
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int userId = prefs.getInt('userId') ?? -1; // 取
     String token = prefs.getString('token');
@@ -166,10 +162,7 @@ class _IntroPageState extends State<IntroPage> {
       );
 
       if (result.data['code'] != '0000') {
-        print(result.data['message']);
-        setState(() {
-          _whetherPostLoading = false;
-        });
+        DialogUtils.showToastDialog(context, text: result.data['message']);
         return;
       }
 
@@ -179,9 +172,5 @@ class _IntroPageState extends State<IntroPage> {
     } catch (e) {
       print(e);
     }
-
-    setState(() {
-      _whetherPostLoading = false;
-    });
   }
 }

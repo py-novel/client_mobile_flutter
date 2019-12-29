@@ -8,7 +8,7 @@ class OauthModel {
   OauthModel.fromJson(Map<String, dynamic> json) {
     code = json['code'];
     message = json['message'];
-    data = json['data'];
+    data = Oauth.fromJson(json['data']);
   }
 }
 

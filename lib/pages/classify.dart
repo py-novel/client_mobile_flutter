@@ -89,7 +89,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
               ? TextStyle(
                   color: Color.fromRGBO(44, 131, 245, 1.0),
                 )
-              : TextStyle(),
+              : TextStyle(color: Color.fromRGBO(128, 128, 128, 100),),
         ),
       ),
     );

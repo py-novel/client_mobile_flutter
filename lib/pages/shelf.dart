@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'package:dio/dio.dart';
 import './read.dart';
 import '../models/Shelf.dart';
 import '../models/Oauth.dart';
@@ -9,6 +10,7 @@ import '../utils/request.dart';
 import '../components/BottomAppBar.dart';
 import '../components/NovelItem.dart';
 import '../components/LoadingView.dart';
+import '../components/ToastDialog.dart';
 
 class ShelfPage extends StatefulWidget {
   @override
@@ -23,6 +25,7 @@ class _ShelfPageState extends State<ShelfPage> {
   @override
   void initState() {
     _fetchToken();
+    _fetchShelfList();
     super.initState();
   }
 
@@ -120,24 +123,47 @@ class _ShelfPageState extends State<ShelfPage> {
                 padding: EdgeInsets.all(5.0),
                 children: List.generate(_shelfList.length, (index) {
                   Shelf novel = _shelfList[index];
-                  return GestureDetector(
-                    child: NovelItem(
-                        bookName: novel.bookName, authorName: novel.authorName),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ReadPage(
-                            shelfId: novel.id,
-                          ),
-                        ),
-                      );
-                    },
-                  );
+                  return _buildShelfItem(novel);
                 }),
               )),
         ),
       ],
+    );
+  }
+
+  Widget _buildShelfItem(Shelf novel) {
+    List<Widget> content = [];
+    content.add(
+      NovelItem(bookName: novel.bookName, authorName: novel.authorName),
+    );
+    if (_whetherDelete) {
+      content.add(Align(
+        alignment: Alignment.topRight,
+        child: IconButton(
+          icon: Icon(Icons.close),
+          onPressed: () {
+            _deleteShelf(novel.id);
+          },
+        ),
+      ));
+    }
+
+    return GestureDetector(
+      child: Stack(
+        children: content,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReadPage(
+              url: novel.recentChapterUrl,
+              bookName: novel.bookName,
+              shelfId: novel.id,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -150,7 +176,8 @@ class _ShelfPageState extends State<ShelfPage> {
     int userId = prefs.getInt('userId') ?? -1;
 
     try {
-      var result = await HttpUtils.getInstance().get('/gysw/shelf?userId=$userId');
+      var result =
+          await HttpUtils.getInstance().get('/gysw/shelf?userId=$userId');
       ShelfModel shelfResult = ShelfModel.fromJson(result.data);
 
       setState(() {
@@ -167,14 +194,13 @@ class _ShelfPageState extends State<ShelfPage> {
 
   _fetchToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
     int userId = prefs.getInt('userId') ?? -1;
     if (userId == -1) {
       String username = Random().nextDouble().toString().substring(2);
 
       try {
-        var result = await HttpUtils.getInstance().post('/gysw/oauth/h5signin',
-            data: {username: username});
+        var result = await HttpUtils.getInstance()
+            .post('/gysw/oauth/h5signin', data: {'username': username});
         OauthModel oauthResult = OauthModel.fromJson(result.data);
 
         prefs.setInt('userId', oauthResult.data.userId);
@@ -184,5 +210,32 @@ class _ShelfPageState extends State<ShelfPage> {
       }
     }
     _fetchShelfList();
+  }
+
+  _deleteShelf(int id) async {
+    setState(() {
+      _whetherLoading = true;
+    });
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String token = prefs.getString('token');
+      var result = await HttpUtils.getInstance().delete('/gysw/shelf',
+          data: {'id': id},
+          options: Options(headers: {
+            'Authorization': 'Bearer ' + token,
+          }));
+      if (result.data['code'] != '0000') {
+        ToastDialog(text: result.data['message']);
+        return print('删除失败');
+      }
+
+      setState(() {
+        _whetherDelete = false;
+      });
+      _fetchShelfList();
+    } catch (e) {
+      print(e);
+    }
   }
 }
