@@ -107,7 +107,7 @@ class BallPulseIndicatorPainter extends CustomPainter {
         BallPulseIndicatorState.delay;
     double secondScaleValue;
     bool firstRGrow;
-    bool secondR_grow;
+    bool secondRGrow;
     if (this.animation.value > 1) {
       firstRGrow = false;
       firstScaleValue = tween.lerp(2 - this.animation.value);
@@ -120,11 +120,11 @@ class BallPulseIndicatorPainter extends CustomPainter {
     if (firstRGrow) {
       //第一个圆在长大
       if (firstScaleValue > scaleGap + BallPulseIndicatorState.scaleBegin) {
-        secondR_grow = true;
+        secondRGrow = true;
         secondScaleValue = firstScaleValue - scaleGap;
       } else {
         //第一个圆长大，第二个圆在缩小
-        secondR_grow = false;
+        secondRGrow = false;
         secondScaleValue = scaleGap +
             BallPulseIndicatorState.scaleBegin -
             firstScaleValue +
@@ -133,11 +133,11 @@ class BallPulseIndicatorPainter extends CustomPainter {
     } else {
       //第一个圆在缩小
       if (firstScaleValue + scaleGap < BallPulseIndicatorState.scaleEnd) {
-        secondR_grow = false;
+        secondRGrow = false;
         secondScaleValue = firstScaleValue + scaleGap;
       } else {
         //第一个圆缩小，第二个圆长大
-        secondR_grow = true;
+        secondRGrow = true;
         secondScaleValue = BallPulseIndicatorState.scaleEnd -
             firstScaleValue +
             BallPulseIndicatorState.scaleEnd -
@@ -146,7 +146,7 @@ class BallPulseIndicatorPainter extends CustomPainter {
     }
 
     double thirdScaleValue;
-    if (secondR_grow) {
+    if (secondRGrow) {
       if (secondScaleValue - scaleGap > BallPulseIndicatorState.scaleBegin) {
         thirdScaleValue = secondScaleValue - scaleGap;
       } else {

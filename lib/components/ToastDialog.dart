@@ -23,9 +23,9 @@ class ToastDialog extends Dialog {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-            child: new Text(
+            child: Text(
               text,
-              style: new TextStyle(fontSize: 12.0),
+              style: TextStyle(fontSize: 12.0),
             ),
           ),
         ),
