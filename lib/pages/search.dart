@@ -22,8 +22,7 @@ class _SearchPageState extends State<SearchPage> {
   bool _whetherLoading = false;
 
   TextEditingController _keywordController = TextEditingController();   // 搜索关键词
-  FocusNode _keywordFocus = FocusNode();    // 文本框焦点
-
+  
   @override
   void initState() {
     _fetchHotList();
