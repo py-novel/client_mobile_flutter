@@ -1,14 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
 import '../models/Intro.dart';
 import '../utils/color.dart';
 import '../utils/request.dart';
 import '../utils/DialogUtils.dart';
 import '../components/NovelItem.dart';
 import '../components/LoadingView.dart';
-import '../components/ToastDialog.dart';
 
 class IntroPage extends StatefulWidget {
   final String url;
@@ -37,7 +35,6 @@ class _IntroPageState extends State<IntroPage> {
       content.add(_buildBookAndAuthor());
       content.add(_buildTimeAndClassify());
       content.add(_buildBookDesc());
-      content.add(_buildFooterBtn());
     }
 
     return Scaffold(
@@ -46,6 +43,7 @@ class _IntroPageState extends State<IntroPage> {
         color: MyColor.bgColor,
         child: ListView(children: content),
       ),
+      bottomSheet: _buildBottomSheet(),
     );
   }
 
@@ -62,6 +60,20 @@ class _IntroPageState extends State<IntroPage> {
           Navigator.pop(context);
         },
       ),
+    );
+  }
+
+  Widget _buildBottomSheet() {
+    return GestureDetector(
+      child: Container(
+        child: Text('加入书架', style: TextStyle(color: Colors.white)),
+        height: 48.0,
+        alignment: Alignment.center,
+        color: Colors.blue,
+      ),
+      onTap: () {
+        _postShelf();
+      },
     );
   }
 
@@ -110,22 +122,6 @@ class _IntroPageState extends State<IntroPage> {
     );
   }
 
-  /* 加入书架按钮 */
-  Widget _buildFooterBtn() {
-    return GestureDetector(
-      child: Container(
-        margin: EdgeInsets.only(top: 20.0),
-        child: Text('加入书架', style: TextStyle(color: Colors.white)),
-        height: 48.0,
-        alignment: Alignment.center,
-        color: Colors.blue,
-      ),
-      onTap: () {
-        _postShelf();
-      },
-    );
-  }
-
   _fetchIntroInfo() async {
     try {
       var result = await HttpUtils.getInstance()
@@ -148,18 +144,17 @@ class _IntroPageState extends State<IntroPage> {
 
     try {
       Response<Map> result = await HttpUtils.getInstance().post('/gysw/shelf',
-        data: {
-          'userId': userId,
-          'authorName': _intro.authorName,
-          'bookName': _intro.bookName,
-          'bookDesc': _intro.bookDesc,
-          'bookCoverUrl': 'https://novel.dkvirus.top/images/cover.png',
-          'recentChapterUrl': _intro.recentChapterUrl,
-        },
-        options: Options(headers: {
-          'Authorization': 'Bearer ' + token,
-        })
-      );
+          data: {
+            'userId': userId,
+            'authorName': _intro.authorName,
+            'bookName': _intro.bookName,
+            'bookDesc': _intro.bookDesc,
+            'bookCoverUrl': 'https://novel.dkvirus.top/images/cover.png',
+            'recentChapterUrl': _intro.recentChapterUrl,
+          },
+          options: Options(headers: {
+            'Authorization': 'Bearer ' + token,
+          }));
 
       if (result.data['code'] != '0000') {
         DialogUtils.showToastDialog(context, text: result.data['message']);

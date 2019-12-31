@@ -69,7 +69,8 @@ class _ReadPageState extends State<ReadPage> {
           GestureDetector(
             child: Icon(Icons.chevron_left),
             onTap: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/shelf', (Route<dynamic> route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/shelf', (Route<dynamic> route) => false);
             },
           ),
           Text(_detail != null ? _detail.title : ''),
@@ -249,15 +250,14 @@ class _ReadPageState extends State<ReadPage> {
     // 小分页
     return Expanded(
       child: ListView.separated(
+          padding: const EdgeInsets.all(10.0),
           itemCount: _smallPageList.length,
           separatorBuilder: (BuildContext context, int index) => Divider(),
           itemBuilder: (BuildContext context, int index) {
             Chapter _page = _smallPageList[index];
-            return GestureDetector(
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 6.0, horizontal: 15.0),
-                child: Text(_page.name),
-              ),
+            return ListTile(
+              title: Text(_page.name),
+              contentPadding: EdgeInsets.zero,
               onTap: () {
                 Navigator.of(context).pop();
                 _fetchDetail(_page.url);
@@ -273,8 +273,8 @@ class _ReadPageState extends State<ReadPage> {
     });
 
     try {
-      var result = await HttpUtils.getInstance()
-          .get('/gysw/novel/content?url=${Uri.encodeComponent(url)}&shelfId=${widget.shelfId}');
+      var result = await HttpUtils.getInstance().get(
+          '/gysw/novel/content?url=${Uri.encodeComponent(url)}&shelfId=${widget.shelfId}');
       DetailModel detailResult = DetailModel.fromJson(result.data);
 
       setState(() {
