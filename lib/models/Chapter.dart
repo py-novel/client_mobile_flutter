@@ -33,10 +33,10 @@ class Chapter {
   }
 }
 
-class ChapterPage {
+class ChapterPagenation {
   int start;
   int end;
   String desc;
 
-  ChapterPage({ this.start, this.end, this.desc });
+  ChapterPagenation({ this.start, this.end, this.desc });
 }
