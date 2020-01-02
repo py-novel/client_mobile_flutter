@@ -27,23 +27,27 @@ class _IntroPageState extends State<IntroPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> content = [];
+    Widget content;
 
     if (_intro == null) {
-      content.add(LoadingView());
+      content = Center(child: LoadingView());
     } else {
-      content.add(_buildBookAndAuthor());
-      content.add(_buildTimeAndClassify());
-      content.add(_buildBookDesc());
+      content = ListView(
+        children: <Widget>[
+          _buildBookAndAuthor(),
+          _buildTimeAndClassify(),
+          _buildBookDesc(),
+        ],
+      );
     }
 
     return Scaffold(
       appBar: _buildAppBar(),
       body: Container(
         color: MyColor.bgColor,
-        child: ListView(children: content),
+        child: content,
       ),
-      bottomSheet: _buildBottomSheet(),
+      bottomSheet: _intro != null ? _buildBottomSheet() : null,
     );
   }
 

@@ -59,7 +59,10 @@ class _ShelfPageState extends State<ShelfPage> {
     List<Widget> actions = [];
     if (_shelfList.length > 0) {
       actions.add(FlatButton(
-        child: Text(_whetherDelete ? '完成' : '编辑'),
+        child: Text(
+          _whetherDelete ? '完成' : '编辑',
+          style: TextStyle(color: Colors.black45),
+        ),
         onPressed: () {
           setState(() {
             _whetherDelete = !_whetherDelete;
