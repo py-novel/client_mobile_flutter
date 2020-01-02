@@ -191,6 +191,9 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
       return;
     }
 
+    int index = chapterList
+        .indexWhere((Chapter item) => item.name.trim() == widget.title.trim());
+
     /// 拼接分页数据，一页先展示 100 条数据
     /// 288 条数据，除以 100，得 2 �� 88
     /// 2880 条数据，除以 100，得 28 余 80
@@ -215,18 +218,15 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
     );
     page.add(cPage);
 
-    List<Chapter> list = [];
-    if (chapterList.length < 100) {
-      list = chapterList;
-    } else {
-      list = chapterList.sublist(0, 100);
-    }
+    int pageIndex = page.indexWhere((ChapterPagenation item) => item.start <= index && item.end >= index);
+    ChapterPagenation currentBigPage = page[pageIndex]; 
+    List<Chapter> list = chapterList.sublist(currentBigPage.start, currentBigPage.end);
 
     setState(() {
       _all = chapterList;
-      _smallPageList = list;
       _bigPageList = page;
-      _bigPage = page.first;
+      _smallPageList = list;
+      _bigPage = currentBigPage;
     });
   }
 }
