@@ -19,8 +19,9 @@ class ReadPage extends StatefulWidget {
   final int shelfId;
   final String url;
   final String bookName;
+  final String fromPage;
 
-  ReadPage({this.shelfId, this.url, this.bookName});
+  ReadPage({this.shelfId, this.url, this.bookName, this.fromPage = 'ShelfPage'});
 
   @override
   State createState() => _ReadPageState();
@@ -89,8 +90,12 @@ class _ReadPageState extends State<ReadPage> {
           GestureDetector(
             child: Icon(Icons.chevron_left),
             onTap: () {
-              Navigator.pushNamedAndRemoveUntil(
+              if (widget.fromPage == 'ShelfPage') {
+                Navigator.pushNamedAndRemoveUntil(
                   context, '/shelf', (Route<dynamic> route) => false);
+              } else {
+                Navigator.pop(context);
+              }
             },
           ),
           Text(_detail != null ? _detail.title : ''),

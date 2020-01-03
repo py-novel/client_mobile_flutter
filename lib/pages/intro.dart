@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import './read.dart';
 import '../models/Intro.dart';
 import '../utils/color.dart';
 import '../utils/request.dart';
@@ -68,16 +69,39 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   Widget _buildBottomSheet() {
-    return GestureDetector(
-      child: Container(
-        child: Text('加入书架', style: TextStyle(color: Colors.white)),
-        height: 48.0,
-        alignment: Alignment.center,
-        color: Colors.blue,
-      ),
-      onTap: () {
-        _postShelf();
-      },
+    return Row(
+      children: <Widget>[
+        GestureDetector(
+          child: Container(
+            child: Text('试读'),
+            height: 48.0,
+            width: MediaQuery.of(context).size.width / 2,
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.black26)),
+            ),
+            alignment: Alignment.center,
+          ),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ReadPage(
+              url: _intro.recentChapterUrl,
+              bookName: _intro.bookName,
+              fromPage: 'IntroPage',
+            )));
+          },
+        ),
+        GestureDetector(
+          child: Container(
+            child: Text('加入书架', style: TextStyle(color: Colors.white)),
+            height: 48.0,
+            width: MediaQuery.of(context).size.width / 2,
+            alignment: Alignment.center,
+            color: Colors.blue,
+          ),
+          onTap: () {
+            _postShelf();
+          },
+        ),
+      ],
     );
   }
 
