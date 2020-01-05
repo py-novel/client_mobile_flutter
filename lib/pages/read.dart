@@ -21,7 +21,8 @@ class ReadPage extends StatefulWidget {
   final String bookName;
   final String fromPage;
 
-  ReadPage({this.shelfId, this.url, this.bookName, this.fromPage = 'ShelfPage'});
+  ReadPage(
+      {this.shelfId, this.url, this.bookName, this.fromPage = 'ShelfPage'});
 
   @override
   State createState() => _ReadPageState();
@@ -34,7 +35,7 @@ class _ReadPageState extends State<ReadPage> {
   // 阅读设置
   double _fontSize = 20.0; // 字体
   String _bgColor = 'daytime'; // 背景颜色
-  bool _whetherNight = false;  // 是否是黑夜
+  bool _whetherNight = false; // 是否是黑夜
 
   @override
   void initState() {
@@ -92,7 +93,7 @@ class _ReadPageState extends State<ReadPage> {
             onTap: () {
               if (widget.fromPage == 'ShelfPage') {
                 Navigator.pushNamedAndRemoveUntil(
-                  context, '/shelf', (Route<dynamic> route) => false);
+                    context, '/shelf', (Route<dynamic> route) => false);
               } else {
                 Navigator.pop(context);
               }
@@ -141,7 +142,7 @@ class _ReadPageState extends State<ReadPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           FlatButton(
-            child: Text('上一章'),
+            child: Text('上一章', style: TextStyle(color: Colors.black54)),
             onPressed: () {
               if (_detail.prevUrl == null ||
                   _detail.prevUrl == '' ||
@@ -153,7 +154,7 @@ class _ReadPageState extends State<ReadPage> {
             },
           ),
           FlatButton(
-            child: Text('下一章'),
+            child: Text('下一章', style: TextStyle(color: Colors.black54)),
             onPressed: () {
               if (_detail.nextUrl == null ||
                   _detail.nextUrl == '' ||
@@ -191,12 +192,12 @@ class _ReadPageState extends State<ReadPage> {
               Icon(Icons.settings),
               Text('设置'),
             ],
-            onTap: () async  {
+            onTap: () async {
               Navigator.pop(context);
               await showModalBottomSheet(
                   context: context,
                   builder: (ctx2) => _buildSettingsBottomSheet());
-              
+
               // 将字体大小、背景颜色保存到本地缓存中
               SharedPreferences prefs = await SharedPreferences.getInstance();
               prefs.setDouble('fontSize', _fontSize);
@@ -205,7 +206,9 @@ class _ReadPageState extends State<ReadPage> {
           ),
           MenuItem(
             children: <Widget>[
-              Icon(_whetherNight == true ? Icons.brightness_7 : Icons.brightness_2),
+              Icon(_whetherNight == true
+                  ? Icons.brightness_7
+                  : Icons.brightness_2),
               Text(_whetherNight == true ? '白天' : '黑夜'),
             ],
             onTap: () {
@@ -230,9 +233,15 @@ class _ReadPageState extends State<ReadPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text('字体', style: TextStyle(fontSize: 24.0),),
+              Text(
+                '字体',
+                style: TextStyle(fontSize: 24.0),
+              ),
               IconButton(
-                icon: Icon(Icons.add, size: 30,),
+                icon: Icon(
+                  Icons.add,
+                  size: 30,
+                ),
                 onPressed: () {
                   setState(() {
                     _fontSize += 2;
@@ -240,7 +249,10 @@ class _ReadPageState extends State<ReadPage> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.minimize, size: 30,),
+                icon: Icon(
+                  Icons.minimize,
+                  size: 30,
+                ),
                 onPressed: () {
                   setState(() {
                     _fontSize -= 2;

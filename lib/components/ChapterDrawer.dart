@@ -67,7 +67,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
     content.add(FlatButton(
       child: Text(
         _whetherShowBigPage ? '切换小分页' : '切换大分页（${_bigPage.desc}）',
-        style: TextStyle(fontSize: 16.0),
+        style: TextStyle(fontSize: 16.0, color: Colors.black54),
       ),
       onPressed: () {
         setState(() {
@@ -78,7 +78,10 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
 
     if (_whetherShowBigPage == false) {
       content.add(FlatButton(
-        child: Text(_order == 'asc' ? '降序' : '升序'),
+        child: Text(
+          _order == 'asc' ? '降序' : '升序',
+          style: TextStyle(color: Colors.black54),
+        ),
         onPressed: () {
           List<Chapter> newList = _smallPageList.reversed.toList();
           String order = _order == 'asc' ? 'desc' : 'asc';
@@ -130,7 +133,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                   style: TextStyle(
                     fontSize: 16.0,
                     fontWeight: FontWeight.w400,
-                    color: _page.desc == _bigPage.desc ? Colors.red : null,
+                    color: _page.desc == _bigPage.desc ? Colors.red : Colors.black54,
                   ),
                 ),
               ),
@@ -165,7 +168,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                 style: TextStyle(
                     color: widget.title?.trim() == _page.name.trim()
                         ? Colors.red
-                        : null)),
+                        : Colors.black54)),
             contentPadding: EdgeInsets.zero,
             onTap: () {
               Navigator.of(context).pop();
@@ -218,9 +221,11 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
     );
     page.add(cPage);
 
-    int pageIndex = page.indexWhere((ChapterPagenation item) => item.start <= index && item.end >= index);
-    ChapterPagenation currentBigPage = page[pageIndex]; 
-    List<Chapter> list = chapterList.sublist(currentBigPage.start, currentBigPage.end);
+    int pageIndex = page.indexWhere(
+        (ChapterPagenation item) => item.start <= index && item.end >= index);
+    ChapterPagenation currentBigPage = page[pageIndex];
+    List<Chapter> list =
+        chapterList.sublist(currentBigPage.start, currentBigPage.end);
 
     setState(() {
       _all = chapterList;
