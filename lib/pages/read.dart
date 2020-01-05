@@ -36,13 +36,22 @@ class _ReadPageState extends State<ReadPage> {
   double _fontSize = 20.0; // 字体
   String _bgColor = 'daytime'; // 背景颜色
   bool _whetherNight = false; // 是否是黑夜
+  ScrollController _controller; // 滚动条对象
 
   @override
   void initState() {
     _fetchDetail(widget.url);
     _fetchChapterList(widget.url);
-    _initThemeData();
+    _initData();
     super.initState();
+  }
+
+  @override
+  void deactivate() {
+    if (widget.shelfId != null) {
+      _saveData();
+    }
+    super.deactivate();
   }
 
   @override
@@ -54,26 +63,37 @@ class _ReadPageState extends State<ReadPage> {
       content = _buildBody();
     }
 
-    return Scaffold(
-      body: Container(
-        color: bgColors[_bgColor],
-        child: Column(
-          children: <Widget>[
-            SizedBox(height: 30),
-            _buildHeader(),
-            content,
-            _buildFooter(),
-          ],
+    return WillPopScope(
+      child: Scaffold(
+        body: Container(
+          color: bgColors[_bgColor],
+          child: Column(
+            children: <Widget>[
+              SizedBox(height: 30),
+              _buildHeader(),
+              content,
+              _buildFooter(),
+            ],
+          ),
+        ),
+        drawer: ChapterDrawer(
+          bookName: widget.bookName,
+          title: _detail != null ? _detail.title : '',
+          chapterList: _chapterList,
+          onTap: (String url) {
+            _fetchDetail(url);
+          },
         ),
       ),
-      drawer: ChapterDrawer(
-        bookName: widget.bookName,
-        title: _detail != null ? _detail.title : '',
-        chapterList: _chapterList,
-        onTap: (String url) {
-          _fetchDetail(url);
-        },
-      ),
+      onWillPop: () {
+        if (widget.fromPage == 'ShelfPage') {
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/shelf', (Route<dynamic> route) => false);
+        } else {
+          Navigator.pop(context);
+        }
+        return;
+      },
     );
   }
 
@@ -110,6 +130,7 @@ class _ReadPageState extends State<ReadPage> {
       child: Builder(
         builder: (ctx) => GestureDetector(
           child: ListView(
+            controller: _controller,
             children: <Widget>[
               Html(
                 data: _detail.content,
@@ -150,7 +171,9 @@ class _ReadPageState extends State<ReadPage> {
                 DialogUtils.showToastDialog(context, text: '当前是第一章了哦~');
                 return;
               }
-              _fetchDetail(_detail.prevUrl);
+              _fetchDetail(_detail.prevUrl, post: () {
+                _controller = new ScrollController(initialScrollOffset: 0.0);
+              });
             },
           ),
           FlatButton(
@@ -162,7 +185,9 @@ class _ReadPageState extends State<ReadPage> {
                 DialogUtils.showToastDialog(context, text: '已经是最新章节了哦~');
                 return;
               }
-              _fetchDetail(_detail.nextUrl);
+              _fetchDetail(_detail.nextUrl, post: () {
+                _controller = new ScrollController(initialScrollOffset: 0.0);
+              });
             },
           ),
         ],
@@ -303,7 +328,7 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  _fetchDetail(String url) async {
+  _fetchDetail(String url, { Function post }) async {
     setState(() {
       _detail = null;
     });
@@ -316,6 +341,10 @@ class _ReadPageState extends State<ReadPage> {
       setState(() {
         _detail = detailResult.data;
       });
+
+      if (post != null) {
+        post();
+      }
     } catch (e) {
       print(e);
     }
@@ -333,14 +362,22 @@ class _ReadPageState extends State<ReadPage> {
     });
   }
 
-  _initThemeData() async {
+  _initData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     double fontSize = prefs.getDouble('fontSize') ?? 20.0;
     String bgColor = prefs.getString('bgColor') ?? 'daytime';
+    double currPos = prefs.getDouble(widget.shelfId.toString() + 'currPos') ?? 0.0;
+    _controller = new ScrollController(initialScrollOffset: currPos);
     setState(() {
       _fontSize = fontSize;
       _bgColor = bgColor;
     });
+  }
+
+  _saveData() async {
+    double _currPos = _controller.position.pixels;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setDouble(widget.shelfId.toString() + 'currPos', _currPos);
   }
 }
 
