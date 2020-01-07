@@ -79,6 +79,7 @@ class _ShelfPageState extends State<ShelfPage> {
       backgroundColor: MyColor.bgColor,
       elevation: 0,
       actions: actions,
+      brightness: Brightness.light,
     );
   }
 

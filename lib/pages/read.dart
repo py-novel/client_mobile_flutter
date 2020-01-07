@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/Detail.dart';
@@ -62,6 +63,11 @@ class _ReadPageState extends State<ReadPage> {
     } else {
       content = _buildBody();
     }
+
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
 
     return WillPopScope(
       child: Scaffold(
@@ -328,7 +334,7 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  _fetchDetail(String url, { Function post }) async {
+  _fetchDetail(String url, {Function post}) async {
     setState(() {
       _detail = null;
     });
@@ -366,7 +372,8 @@ class _ReadPageState extends State<ReadPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     double fontSize = prefs.getDouble('fontSize') ?? 20.0;
     String bgColor = prefs.getString('bgColor') ?? 'daytime';
-    double currPos = prefs.getDouble(widget.shelfId.toString() + 'currPos') ?? 0.0;
+    double currPos =
+        prefs.getDouble(widget.shelfId.toString() + 'currPos') ?? 0.0;
     _controller = new ScrollController(initialScrollOffset: currPos);
     setState(() {
       _fontSize = fontSize;

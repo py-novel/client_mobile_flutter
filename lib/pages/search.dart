@@ -63,6 +63,7 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildAppBar() {
     return AppBar(
       backgroundColor: MyColor.bgColor,
+      brightness: Brightness.light,
       elevation: 0,
       leading: IconButton(
         icon: Icon(Icons.chevron_left),

@@ -55,6 +55,7 @@ class _IntroPageState extends State<IntroPage> {
   Widget _buildAppBar() {
     return AppBar(
       backgroundColor: MyColor.bgColor,
+      brightness: Brightness.light,
       elevation: 0,
       title: Text('详情页', style: TextStyle(color: MyColor.appBarTitle)),
       leading: IconButton(

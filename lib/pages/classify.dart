@@ -49,6 +49,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
         style: TextStyle(color: MyColor.appBarTitle),
       ),
       backgroundColor: MyColor.bgColor,
+      brightness: Brightness.light,
       elevation: 0,
       actions: <Widget>[
         IconButton(
