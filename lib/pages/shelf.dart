@@ -212,6 +212,12 @@ class _ShelfPageState extends State<ShelfPage> {
       } catch (e) {
         print(e);
       }
+    } else {
+      // 刷新 token
+      var result = await HttpUtils.getInstance()
+          .get('/gysw/oauth/token', queryParameters: {'userId': userId});
+      OauthModel oauthResult = OauthModel.fromJson(result.data);
+      prefs.setString('token', oauthResult.data.token);
     }
     _fetchShelfList();
   }

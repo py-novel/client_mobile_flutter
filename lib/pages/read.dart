@@ -22,8 +22,12 @@ class ReadPage extends StatefulWidget {
   final String bookName;
   final String fromPage;
 
-  ReadPage(
-      {this.shelfId, this.url, this.bookName, this.fromPage = 'ShelfPage'});
+  ReadPage({
+    this.shelfId,
+    this.url,
+    this.bookName,
+    this.fromPage = 'ShelfPage',
+  });
 
   @override
   State createState() => _ReadPageState();
@@ -70,25 +74,27 @@ class _ReadPageState extends State<ReadPage> {
     ));
 
     return WillPopScope(
-      child: Scaffold(
-        body: Container(
-          color: bgColors[_bgColor],
-          child: Column(
-            children: <Widget>[
-              SizedBox(height: 30),
-              _buildHeader(),
-              content,
-              _buildFooter(),
-            ],
+      child: SafeArea(
+        child: Scaffold(
+          body: Container(
+            color: bgColors[_bgColor],
+            child: Column(
+              children: <Widget>[
+                SizedBox(height: 30),
+                _buildHeader(),
+                content,
+                _buildFooter(),
+              ],
+            ),
           ),
-        ),
-        drawer: ChapterDrawer(
-          bookName: widget.bookName,
-          title: _detail != null ? _detail.title : '',
-          chapterList: _chapterList,
-          onTap: (String url) {
-            _fetchDetail(url);
-          },
+          drawer: ChapterDrawer(
+            bookName: widget.bookName,
+            title: _detail != null ? _detail.title : '',
+            chapterList: _chapterList,
+            onTap: (String url) {
+              _fetchDetail(url);
+            },
+          ),
         ),
       ),
       onWillPop: () {
@@ -96,11 +102,22 @@ class _ReadPageState extends State<ReadPage> {
           Navigator.pushNamedAndRemoveUntil(
               context, '/shelf', (Route<dynamic> route) => false);
         } else {
-          Navigator.pop(context);
+          _showJoinBottomSheet();
         }
         return;
       },
     );
+  }
+
+  void _showJoinBottomSheet() async {
+    // 从小说详情页面进入的阅读页面，当返回上一页面时
+    // 弹出对话框询问是否加入书架
+    var result = await showModalBottomSheet(
+      context: context,
+      builder: (ctx) => _buildJoinShelfBottomSheet(ctx),
+      backgroundColor: Colors.transparent,
+    );
+    Navigator.pop(context, result);
   }
 
   Widget _buildHeader() {
@@ -121,7 +138,7 @@ class _ReadPageState extends State<ReadPage> {
                 Navigator.pushNamedAndRemoveUntil(
                     context, '/shelf', (Route<dynamic> route) => false);
               } else {
-                Navigator.pop(context);
+                _showJoinBottomSheet();
               }
             },
           ),
@@ -334,6 +351,78 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
+  Widget _buildJoinShelfBottomSheet(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20.0),
+          topRight: Radius.circular(20.0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              child: Text(
+                '提示',
+                style: TextStyle(fontSize: 20.0),
+              ),
+              padding: EdgeInsets.only(left: 20.0, top: 10),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                '加入书架，下次找书更方便',
+                style: TextStyle(fontSize: 16.0),
+              ),
+            ),
+            flex: 2,
+          ),
+          Expanded(
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: GestureDetector(
+                    child: Container(
+                      alignment: Alignment.center,
+                      color: Colors.blueAccent,
+                      child: Text(
+                        '加入书架',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    onTap: () {
+                      // 加入书架
+                      Navigator.pop(context, 'join');
+                    },
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: GestureDetector(
+                    child: Container(
+                      alignment: Alignment.center,
+                      color: Colors.transparent,
+                      child: Text('取消'),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   _fetchDetail(String url, {Function post}) async {
     setState(() {
       _detail = null;
@@ -357,15 +446,19 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   _fetchChapterList(String chapterUrl) async {
-    String url = chapterUrl.substring(0, chapterUrl.lastIndexOf('/'));
+    try {
+      String url = chapterUrl.substring(0, chapterUrl.lastIndexOf('/'));
 
-    var result = await HttpUtils.getInstance()
-        .get('/gysw/novel/chapter?url=${Uri.encodeComponent(url)}');
-    ChapterModel chapterResult = ChapterModel.fromJson(result.data);
+      var result = await HttpUtils.getInstance()
+          .get('/gysw/novel/chapter?url=${Uri.encodeComponent(url)}');
+      ChapterModel chapterResult = ChapterModel.fromJson(result.data);
 
-    setState(() {
-      _chapterList = chapterResult.data;
-    });
+      setState(() {
+        _chapterList = chapterResult.data;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   _initData() async {

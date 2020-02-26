@@ -82,12 +82,20 @@ class _IntroPageState extends State<IntroPage> {
             ),
             alignment: Alignment.center,
           ),
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ReadPage(
-              url: _intro.recentChapterUrl,
-              bookName: _intro.bookName,
-              fromPage: 'IntroPage',
-            )));
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ReadPage(
+                  url: _intro.recentChapterUrl,
+                  bookName: _intro.bookName,
+                  fromPage: 'IntroPage',
+                ),
+              ),
+            );
+            if (result == 'join') {
+              _postShelf();
+            }
           },
         ),
         GestureDetector(
@@ -98,8 +106,13 @@ class _IntroPageState extends State<IntroPage> {
             alignment: Alignment.center,
             color: Colors.blue,
           ),
-          onTap: () {
-            _postShelf();
+          onTap: () async {
+            final result = await _postShelf();
+            // 跳转到首页
+            if (result == true) {
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/shelf', (Route<dynamic> route) => false);
+            }
           },
         ),
       ],
@@ -166,7 +179,7 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   /* 加入书架 */
-  _postShelf() async {
+  Future<bool> _postShelf() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int userId = prefs.getInt('userId') ?? -1; // 取
     String token = prefs.getString('token');
@@ -187,14 +200,14 @@ class _IntroPageState extends State<IntroPage> {
 
       if (result.data['code'] != '0000') {
         DialogUtils.showToastDialog(context, text: result.data['message']);
-        return;
+        return false;
+      } else {
+        DialogUtils.showToastDialog(context, text: '加入书架成功');
+        return true;
       }
-
-      // 跳转到首页
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/shelf', (Route<dynamic> route) => false);
     } catch (e) {
       print(e);
+      return false;
     }
   }
 }
