@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import './read.dart';
 import '../models/Shelf.dart';
@@ -187,6 +188,11 @@ class _ShelfPageState extends State<ShelfPage> {
       setState(() {
         _shelfList = shelfResult.data;
       });
+
+      // 书架列表数据保存到本地缓存
+      // 在小说详情页面(IntroPage)会从缓存中取出书架列表数据
+      // 并判断当前书籍是否已经加入过书架
+      prefs.setString('shelfList', jsonEncode(result.data['data']));
     } catch (e) {
       print(e);
     }

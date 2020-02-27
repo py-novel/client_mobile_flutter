@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import './read.dart';
 import '../models/Intro.dart';
 import '../utils/color.dart';
@@ -19,6 +20,7 @@ class IntroPage extends StatefulWidget {
 
 class _IntroPageState extends State<IntroPage> {
   Intro _intro;
+  int _shelfId;
 
   @override
   void initState() {
@@ -70,6 +72,46 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   Widget _buildBottomSheet() {
+    if (_shelfId != null) {
+      return Row(
+        children: <Widget>[
+          GestureDetector(
+            child: Container(
+              child: Text(
+                '去阅读',
+                style: TextStyle(color: Colors.white),
+              ),
+              height: 48.0,
+              width: MediaQuery.of(context).size.width / 2,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                border: Border(top: BorderSide(color: Colors.black26)),
+              ),
+              alignment: Alignment.center,
+            ),
+            onTap: () async {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReadPage(
+                    url: _intro.recentChapterUrl,
+                    bookName: _intro.bookName,
+                    shelfId: _shelfId,
+                  ),
+                ),
+              );
+            },
+          ),
+          Container(
+            child: Text('在书架'),
+            height: 48.0,
+            width: MediaQuery.of(context).size.width / 2,
+            alignment: Alignment.center,
+          ),
+        ],
+      );
+    }
+
     return Row(
       children: <Widget>[
         GestureDetector(
@@ -170,8 +212,23 @@ class _IntroPageState extends State<IntroPage> {
           .get('/gysw/novel/detail?url=${Uri.encodeComponent(widget.url)}');
       IntroModel introResult = IntroModel.fromJson(result.data);
 
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String shelfListStr = prefs.getString('shelfList');
+      List shelfList = jsonDecode(shelfListStr);
+
+      Map shelf = shelfList.firstWhere(
+          (item) =>
+              item['book_name'] == introResult.data.bookName &&
+              item['author_name'] == introResult.data.authorName,
+          orElse: () {});
+
+      if (shelf != null) {
+        introResult.data.recentChapterUrl = shelf['recent_chapter_url'];
+      }
+
       setState(() {
         _intro = introResult.data;
+        _shelfId = shelf != null ? shelf['id'] : null;
       });
     } catch (e) {
       print(e);
