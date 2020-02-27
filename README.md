@@ -4,7 +4,7 @@ Dart + Flutter + Dio 实现 `公羊阅读` 移动端应用。
 
 ### Download
 
-[download APK 1.1.0-beta.1](https://github.com/py-novel/client_mobile_flutter/releases/tag/1.1.0-beta.1)
+[download APK 1.2.1](https://github.com/py-novel/client_mobile_flutter/releases/tag/1.2.1)
 
 ### Run
 
